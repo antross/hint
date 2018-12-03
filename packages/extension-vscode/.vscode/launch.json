@@ -7,10 +7,10 @@
             "request": "launch",
             "name": "Launch Client",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "stopOnEntry": false,
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/dist/**/*.js"]
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
         },
         {
             "type": "node",
@@ -23,7 +23,23 @@
                 "<node_internals>/**/*.js"
             ],
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/dist/**/*.js"]
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+        },
+        {
+            "name": "Extension Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/dist/tests/fixtures",
+                "${workspaceFolder}/dist/tests/fixtures/mocks.js",
+                "--disableExtensions",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/tests/server.js"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/dist/test/**/*.js"
+            ]
         }
     ],
     "compounds": [
