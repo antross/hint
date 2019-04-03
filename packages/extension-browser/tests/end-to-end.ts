@@ -1,5 +1,5 @@
 import * as isCI from 'is-ci';
-import { launch, Browser, Page } from 'puppeteer';
+import { launch, Browser, Page, Target } from 'puppeteer';
 import test from 'ava';
 
 import { Server } from '@hint/utils-create-server';
@@ -9,6 +9,18 @@ import { Events, Results } from '../src/shared/types';
 import { readFixture } from './helpers/fixtures';
 
 const pathToExtension = `${__dirname}/../bundle`;
+
+const wait = (delay = 500): Promise<void> => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, delay);
+    });
+};
+
+const getPageFromTarget = async (target: Target) => {
+    (target as any)._targetInfo.type = 'page';
+
+    return await target.page();
+};
 
 /**
  * Find the Puppeteer `Page` associated with the background script
@@ -40,6 +52,51 @@ const findBackgroundScriptPage = async (browser: Browser): Promise<Page> => {
     })[0];
 
     return await bgTarget.page();
+};
+
+/**
+ * Find the Puppeteer `Page` associated with the devtools panel
+ * for the webhint browser extension.
+ *
+ * Needed because Puppeteer doesn't expose the devtools as a page.
+ *
+ * @param browser The Puppeteer `Browser` instance to search.
+ * @returns The found devtools panel for the extension.
+ */
+const findWebhintDevtoolsPanel = async (test: any, browser: Browser): Promise<Page | null> => {
+    const targets = await browser.targets();
+    const devtoolsTarget = targets.filter((t) => {
+        return t.type() === 'other' && t.url().startsWith('chrome-devtools://');
+    })[0];
+
+    const devtoolsPage = await getPageFromTarget(devtoolsTarget);
+
+    await wait();
+
+    // Based on https://github.com/GoogleChrome/puppeteer/issues/3699#issuecomment-450526587
+    await devtoolsPage.keyboard.down('Control');
+    await devtoolsPage.keyboard.press('[');
+    await devtoolsPage.keyboard.up('Control');
+
+    await wait();
+
+    const newTargets = await browser.targets();
+
+    const webhintTarget = newTargets.filter((target) => {
+        const url = target.url();
+        const isExtension = url.startsWith('chrome-extension://');
+        const isPanel = url.endsWith('devtools/panel.html');
+
+        return isExtension && isPanel;
+    })[0];
+
+    test.log('webhint target: ', webhintTarget.url());
+
+    const webhintPanel = await getPageFromTarget(webhintTarget);
+
+    test.log('webhint panel: ', !!webhintPanel);
+
+    return webhintPanel;
 };
 
 test('It runs end-to-end in a page', async (t) => {
@@ -106,17 +163,33 @@ if (!isCI) {
                 `--disable-extensions-except=${pathToExtension}`,
                 `--load-extension=${pathToExtension}`
             ],
+            defaultViewport: null,
+            devtools: true,
             headless: false
         });
 
         const pages = await browser.pages();
-        const backgroundPage = await findBackgroundScriptPage(browser);
 
         await pages[0].goto(url);
 
-        await new Promise((resolve) => {
-            setTimeout(resolve, 500);
-        });
+        await wait();
+
+        const backgroundPage = await findBackgroundScriptPage(browser);
+        const webhintPanel = await findWebhintDevtoolsPanel(t, browser);
+
+        await wait();
+
+        // t.log(webhintPanel && webhintPanel.url());
+
+        if (webhintPanel) {
+            const button = await webhintPanel.$('button[type="submit"]');
+
+            if (button) {
+                t.log('Got a button!');
+
+                // button.click();
+            }
+        }
 
         const results: Results = await backgroundPage.evaluate(() => {
             return new Promise<Results>((resolve) => {
@@ -125,11 +198,6 @@ if (!isCI) {
                         resolve(message.results);
                     }
                 });
-
-                const event: Events = { enable: { config: {} } };
-
-                // Simulate sending message from devtools panel to background script to start analyzing.
-                chrome.tabs.executeScript({ code: `chrome.runtime.sendMessage(${JSON.stringify(event)})` });
             });
         });
 
