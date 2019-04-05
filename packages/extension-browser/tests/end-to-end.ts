@@ -1,5 +1,5 @@
 import * as isCI from 'is-ci';
-import { launch, Browser, Page, Target } from 'puppeteer';
+import { launch, Browser, Frame, Page, Target } from 'puppeteer';
 import test from 'ava';
 
 import { Server } from '@hint/utils-create-server';
@@ -63,7 +63,7 @@ const findBackgroundScriptPage = async (browser: Browser): Promise<Page> => {
  * @param browser The Puppeteer `Browser` instance to search.
  * @returns The found devtools panel for the extension.
  */
-const findWebhintDevtoolsPanel = async (test: any, browser: Browser): Promise<Page | null> => {
+const findWebhintDevtoolsPanel = async (test: any, browser: Browser): Promise<Frame | null> => {
     const targets = await browser.targets();
     const devtoolsTarget = targets.filter((t) => {
         return t.type() === 'other' && t.url().startsWith('chrome-devtools://');
@@ -85,18 +85,22 @@ const findWebhintDevtoolsPanel = async (test: any, browser: Browser): Promise<Pa
     const webhintTarget = newTargets.filter((target) => {
         const url = target.url();
         const isExtension = url.startsWith('chrome-extension://');
-        const isPanel = url.endsWith('devtools/panel.html');
+        const isPanel = url.endsWith('/panel.html');
 
         return isExtension && isPanel;
     })[0];
 
     test.log('webhint target: ', webhintTarget.url());
 
-    const webhintPanel = await getPageFromTarget(webhintTarget);
+    const webhintPanelPage = await getPageFromTarget(webhintTarget);
 
-    test.log('webhint panel: ', !!webhintPanel);
+    test.log('webhint panel page: ', !!webhintPanelPage);
 
-    return webhintPanel;
+    const webhintPanelFrame = webhintPanelPage.frames()[0];
+
+    test.log('webhint panel frame: ', !!webhintPanelFrame);
+
+    return webhintPanelFrame;
 };
 
 test('It runs end-to-end in a page', async (t) => {
@@ -187,7 +191,7 @@ if (!isCI) {
             if (button) {
                 t.log('Got a button!');
 
-                // button.click();
+                button.click();
             }
         }
 
