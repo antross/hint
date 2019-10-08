@@ -1,6 +1,8 @@
-import { Options, parse, tokenizer } from 'acorn';
+import { Options, Parser } from 'acorn';
 import * as acornWalk from 'acorn-walk';
 import * as ESTree from 'estree';
+
+const jsx = require('acorn-jsx');
 
 import { HTMLElement } from '@hint/utils/dist/src/dom';
 import * as logger from '@hint/utils/dist/src/logging';
@@ -31,6 +33,9 @@ type Key = {
  */
 type WalkArray = Array<[Key, Map<keyof NodeVisitor | 'callbacks', Function[]>]>;
 
+const jsParser = Parser.extend();
+const jsxParser = Parser.extend(jsx());
+
 export default class JavascriptParser extends WebhintParser<ScriptEvents> {
     public constructor(engine: Engine<ScriptEvents>) {
         super(engine, 'javascript');
@@ -47,13 +52,13 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
         return item ? item[1] : null;
     }
 
-    private async emitScript(sourceCode: string, resource: string, element: HTMLElement | null) {
+    private async emitScript(parser: typeof Parser, sourceCode: string, resource: string, element: HTMLElement | null) {
         try {
             await this.engine.emitAsync(`parse::start::javascript`, { resource });
 
             const options: Options = { locations: true };
-            const ast = parse(sourceCode, options) as ESTree.Node;
-            const tokens = [...tokenizer(sourceCode, options)];
+            const ast = parser.parse(sourceCode, options) as ESTree.Node;
+            const tokens = [...parser.tokenizer(sourceCode, options)];
             const defaultCallbacksProperty = 'callbacks';
 
             // Store a WalkArray for each method supported.
@@ -222,8 +227,10 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
     private async parseJavascript(fetchEnd: FetchEnd) {
         const code = fetchEnd.response.body.content;
         const resource = fetchEnd.resource;
+        const type = fetchEnd.response.mediaType;
+        const parser = type === 'text/jsx' ? jsxParser : jsParser;
 
-        await this.emitScript(code, resource, null);
+        await this.emitScript(parser, code, resource, null);
     }
 
     private hasSrcAttribute(element: HTMLElement) {
@@ -250,6 +257,6 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
             return;
         }
 
-        await this.emitScript(element.innerHTML, resource, element);
+        await this.emitScript(jsParser, element.innerHTML, resource, element);
     }
 }

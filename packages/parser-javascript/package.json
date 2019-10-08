@@ -9,6 +9,7 @@
   "dependencies": {
     "@hint/utils": "^5.0.2",
     "acorn": "^7.0.0",
+    "acorn-jsx": "^5.0.2",
     "acorn-walk": "^7.0.0"
   },
   "description": "webhint parser needed to analyze JavaScript files",
