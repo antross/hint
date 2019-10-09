@@ -3,6 +3,7 @@ import * as acornWalk from 'acorn-walk';
 import * as ESTree from 'estree';
 
 const jsx = require('acorn-jsx');
+const { extend } = require('acorn-jsx-walk');
 
 import { HTMLElement } from '@hint/utils/dist/src/dom';
 import * as logger from '@hint/utils/dist/src/logging';
@@ -35,6 +36,8 @@ type WalkArray = Array<[Key, Map<keyof NodeVisitor | 'callbacks', Function[]>]>;
 
 const jsParser = Parser.extend();
 const jsxParser = Parser.extend(jsx());
+
+extend(acornWalk.base); // Add `walk` support for JSXElement, etc.
 
 export default class JavascriptParser extends WebhintParser<ScriptEvents> {
     public constructor(engine: Engine<ScriptEvents>) {
@@ -220,7 +223,7 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
                 });
             });
         } catch (err) {
-            logger.error(`Error parsing JS code: ${sourceCode}`);
+            logger.error(`Error parsing JS code (${err}): ${sourceCode}`);
         }
     }
 
@@ -229,6 +232,8 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
         const resource = fetchEnd.resource;
         const type = fetchEnd.response.mediaType;
         const parser = type === 'text/jsx' ? jsxParser : jsParser;
+
+        logger.log(`Parsing "${type}" from ${resource}`);
 
         await this.emitScript(parser, code, resource, null);
     }
