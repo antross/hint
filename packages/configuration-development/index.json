@@ -43,6 +43,7 @@
         "babel-config",
         "css",
         "html",
+        "javascript",
         "less",
         "sass",
         "typescript-config",
