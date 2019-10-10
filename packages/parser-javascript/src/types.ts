@@ -1,14 +1,10 @@
 import { Token } from 'acorn';
-import { Node as CoreNode } from 'estree';
-import { JSXNode } from './estree-jsx';
+import { Node } from './estree-jsx';
 
 import { HTMLElement } from '@hint/utils/dist/src/dom/html';
 import { Event, Events } from 'hint/dist/src/lib/types/events';
 
-export * from 'estree';
 export * from './estree-jsx';
-
-type Node = CoreNode | JSXNode;
 
 /** All possible values for the Node `type` property. */
 type NodeTypes = Node['type'];
@@ -57,10 +53,10 @@ export type Walk = {
      *
      * From `acorn-walk` (https://github.com/acornjs/acorn/tree/master/acorn-walk)
      */
-    simple(node: Node, visitors: NodeVisitor, base?: NodeVisitor, state?: any): void;
-    ancestor(node: Node, visitors: NodeVisitor, base?: NodeVisitor, state?: any): void;
-    full(node: Node, callback: (node: Node, state: any, type: string) => void, base?: NodeVisitor, state?: any): void;
-    fullAncestor(node: Node, callback: (node: Node, state: any, ancestors: Node[]) => void, base?: NodeVisitor, state?: any): void;
+    simple(node: Node, visitors: NodeVisitor, base?: NodeVisitor, state?: any): Promise<void>;
+    ancestor(node: Node, visitors: NodeVisitor, base?: NodeVisitor, state?: any): Promise<void>;
+    full(node: Node, callback: (node: Node, state: any, type: string) => void, base?: NodeVisitor, state?: any): Promise<void>;
+    fullAncestor(node: Node, callback: (node: Node, state: any, ancestors: Node[]) => void, base?: NodeVisitor, state?: any): Promise<void>;
 };
 
 /** The object emitted by the `javascript` parser */

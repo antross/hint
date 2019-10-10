@@ -6,17 +6,19 @@ import {
     Expression,
     Identifier,
     Literal,
+    Node as ESTreeNode,
     SpreadElement
 } from 'estree';
 
+export * from 'estree';
+
 type Omit<Props, T> = Pick<T, Exclude<keyof T, Props>>;
 
-export type JSXNode =
-    JSXIdentifier | JSXNamespacedName | JSXMemberExpression |
+export type Node =
+    ESTreeNode | JSXIdentifier | JSXNamespacedName | JSXMemberExpression |
     JSXEmptyExpression | JSXExpressionContainer | JSXSpreadAttribute |
-    JSXAttribute | JSXOpeningElement | JSXOpeningFragment |
-    JSXClosingElement | JSXClosingFragment | JSXElement | JSXFragment |
-    JSXText;
+    JSXAttribute | JSXOpeningElement | JSXOpeningFragment | JSXClosingElement |
+    JSXClosingFragment | JSXElement | JSXFragment | JSXText;
 
 interface SourceLocation {
     source?: string | null;
@@ -99,6 +101,7 @@ export interface JSXElement extends Omit<'type', Expression> {
     type: 'JSXElement';
     openingElement: JSXOpeningElement;
     children: (JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment)[];
+    closingElement: JSXClosingElement | null;
 }
 
 export interface JSXFragment extends Omit<'type', Expression> {
