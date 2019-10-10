@@ -44,6 +44,7 @@
         "css",
         "html",
         "javascript",
+        "jsx",
         "less",
         "sass",
         "typescript-config",
