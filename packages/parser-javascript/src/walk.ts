@@ -195,14 +195,14 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
     return { walk, walkArrays };
 };
 
-export const combineWalk = (register: (walk: Walk) => void) => {
+export const combineWalk = async (register: (walk: Walk) => void) => {
     let resolve = () => {};
     const promise = new Promise<void>((res) => {
         resolve = res;
     });
     const { walk, walkArrays } = prepareWalk(promise);
 
-    register(walk);
+    await register(walk);
     performWalk(walkArrays);
     resolve();
 };
