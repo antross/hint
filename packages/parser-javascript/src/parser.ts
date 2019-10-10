@@ -59,7 +59,7 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
         try {
             await this.engine.emitAsync(`parse::start::javascript`, { resource });
 
-            const options: Options = { locations: true };
+            const options: Options = { locations: true, ranges: true };
             const ast = parser.parse(sourceCode, options) as ESTree.Node;
             const tokens = [...parser.tokenizer(sourceCode, options)];
             const defaultCallbacksProperty = 'callbacks';

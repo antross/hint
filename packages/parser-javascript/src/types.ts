@@ -1,8 +1,14 @@
 import { Token } from 'acorn';
-import { Node } from 'estree';
+import { Node as CoreNode } from 'estree';
+import { JSXNode } from './estree-jsx';
 
 import { HTMLElement } from '@hint/utils/dist/src/dom/html';
 import { Event, Events } from 'hint/dist/src/lib/types/events';
+
+export * from 'estree';
+export * from './estree-jsx';
+
+type Node = CoreNode | JSXNode;
 
 /** All possible values for the Node `type` property. */
 type NodeTypes = Node['type'];
