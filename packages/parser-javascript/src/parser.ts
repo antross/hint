@@ -8,7 +8,7 @@ import { ElementFound, FetchEnd, Parser as WebhintParser } from 'hint/dist/src/l
 import { Engine } from 'hint/dist/src/lib/engine';
 
 import { ScriptEvents } from './types';
-import { combineWalk } from './walk';
+import { prepareWalk, performWalk } from './walk';
 
 export * from './types';
 
@@ -32,16 +32,20 @@ export default class JavascriptParser extends WebhintParser<ScriptEvents> {
             const ast = parser.parse(sourceCode, options) as Node;
             const tokens = [...parser.tokenizer(sourceCode, options)];
 
-            await combineWalk(async (walk) => {
-                await this.engine.emitAsync(`parse::end::javascript`, {
-                    ast,
-                    element,
-                    resource,
-                    sourceCode,
-                    tokens,
-                    walk
-                });
+            const { walk, walkArrays } = prepareWalk();
+
+            const emits = this.engine.emitAsync(`parse::end::javascript`, {
+                ast,
+                element,
+                resource,
+                sourceCode,
+                tokens,
+                walk
             });
+
+            performWalk(walkArrays);
+
+            await emits;
 
         } catch (err) {
             logger.error(`Error parsing JS code (${err}): ${sourceCode}`);

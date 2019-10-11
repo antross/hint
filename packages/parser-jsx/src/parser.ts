@@ -48,8 +48,6 @@ export default class JSXParser extends Parser<HTMLEvents> {
         super(engine, 'html');
 
         engine.on('parse::end::javascript', async ({ ast, resource, walk }) => {
-            await this.engine.emitAsync(`parse::start::html`, { resource });
-
             const roots = new Map<JSXElement, ElementData>();
             const elements = new Map<JSXElement, ElementData>();
 
@@ -104,6 +102,8 @@ export default class JSXParser extends Parser<HTMLEvents> {
                     }
                 }
             });
+
+            await this.engine.emitAsync(`parse::start::html`, { resource });
 
             const dom = parse5.parse(
                 `<!doctype html><html data-webhint-fragment></html>`,

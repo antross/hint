@@ -58,7 +58,7 @@ const defaultCallbacksProperty = 'callbacks';
  *     // code from callback in hint 4
  * });
  */
-const performWalk = (walkArrays: WalkArrays) => {
+export const performWalk = (walkArrays: WalkArrays) => {
     Object.entries(walkArrays).forEach(([methodName, walkArray]) => {
         walkArray.forEach(([{ node, state, base }, visitors]) => {
             let allVisitors: NodeVisitor | Function = {};
@@ -90,7 +90,7 @@ const performWalk = (walkArrays: WalkArrays) => {
     });
 };
 
-const prepareWalk = (afterWalkPromise: Promise<void>) => {
+export const prepareWalk = () => {
     // Store a WalkArray for each method supported.
     const walkArrays: WalkArrays = {
         ancestor: [],
@@ -102,7 +102,7 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
     /**
      * Create a method that will create a WalkArray for a walk method (simple, full, etc.).
      */
-    const getWalkAccumulator = <K extends keyof Walk>(methodName: K): Walk[K] => {
+    const getWalkAccumulator = <K extends keyof Walk>(methodName: K) => {
         if (!walkArrays[methodName]) {
             walkArrays[methodName] = [];
         }
@@ -153,7 +153,8 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
          * be `callbacks`, and the content for that entry will be an array with 1 function. That function
          * is the function defined in `hint 4`
          */
-        return (node: ESTree.Node, visitorsOrCallback: NodeVisitor | Function, base?: NodeVisitor, state?: any) => {
+        return async (node: ESTree.Node, visitorsOrCallback: NodeVisitor | Function, base?: NodeVisitor, state?: any) => {
+
             let currentVisitors = getCurrentVisitorsOrCallback(walkArrays[methodName], node, base, state);
 
             if (!currentVisitors) {
@@ -168,8 +169,6 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
 
                 visitorCallbacks.push(visitorsOrCallback);
                 currentVisitors.set(name, visitorCallbacks);
-
-                return afterWalkPromise;
             }
 
             for (const [name, callback] of Object.entries(visitorsOrCallback)) {
@@ -180,8 +179,6 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
                 visitorCallbacks.push(callback!);
                 currentVisitors.set(mapName, visitorCallbacks);
             }
-
-            return afterWalkPromise;
         };
     };
 
@@ -193,16 +190,4 @@ const prepareWalk = (afterWalkPromise: Promise<void>) => {
     };
 
     return { walk, walkArrays };
-};
-
-export const combineWalk = async (register: (walk: Walk) => void) => {
-    let resolve = () => {};
-    const promise = new Promise<void>((res) => {
-        resolve = res;
-    });
-    const { walk, walkArrays } = prepareWalk(promise);
-
-    await register(walk);
-    performWalk(walkArrays);
-    resolve();
 };

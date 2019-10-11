@@ -53,7 +53,11 @@
             "name": "webhint",
             "program": "${workspaceFolder}/packages/hint/dist/src/bin/hint.js",
             "args": [
-                "${selectedText}"
+                "-c",
+                "../configuration-development/",
+                "-f",
+                "stylish",
+                "../parser-javascript/tests/fixtures/example.jsx"
             ],
             "cwd": "${workspaceFolder}/packages/hint/",
             "sourceMaps": true,
