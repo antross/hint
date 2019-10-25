@@ -103,6 +103,20 @@ const mapAttributes = (node: JSXElement) => {
 };
 
 /**
+ * Drop expressions from elements with strict child requirements (<ol>, <ul>).
+ * TODO: Consider removing once `axe-core` recognizes expressions.
+ */
+const filterChildren = (name: string, children: (ElementData | TextData)[]) => {
+    if (name === 'ol' || name === 'ul') {
+        return children.filter((child) => {
+            return child.type !== 'text' || child.data !== '{expression}';
+        });
+    }
+
+    return children;
+};
+
+/**
  * Translate `JSXElement` instances (JS AST) to `ElementData` (HTML AST).
  */
 const mapElement = (node: JSXElement, childMap: ChildMap): ElementData => {
@@ -113,7 +127,7 @@ const mapElement = (node: JSXElement, childMap: ChildMap): ElementData => {
 
     const { name } = node.openingElement.name;
     const { attrs, ...attribs } = mapAttributes(node);
-    const children = childMap.get(node) || [];
+    const children = filterChildren(name, childMap.get(node) || []);
 
     return {
         ...attribs,

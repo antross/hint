@@ -155,3 +155,10 @@ test('It translates source locations correctly', async (t) => {
     t.is(column, 13);
     t.is(line, 1);
 });
+
+test('It omits expressions from elements with strict child requirements', async (t) => {
+    const { document } = await parseJSX(`const jsx = <ul>{items}</ul>;`);
+    const ul = document.querySelectorAll('ul')[0];
+
+    t.is(ul.innerHTML, '');
+});
