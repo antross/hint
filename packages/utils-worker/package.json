@@ -106,6 +106,7 @@
     "lint:dependencies": "node ../../scripts/lint-dependencies.js",
     "lint:md": "node ../../scripts/lint-markdown.js",
     "prebuild": "npm-run-all prebuild:*",
+    "prebuild:assets": "cpx \"./src/**/*.json\" dist/bundle ",
     "prebuild:hints": "node ./scripts/import-hints.js",
     "prebuild:i18n": "node ./scripts/create-i18n.js",
     "stats": "webpack --json > stats.json",
