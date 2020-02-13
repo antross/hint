@@ -27,7 +27,7 @@ const reportError = (message: string, stack: string) => {
             message,
             stack
         }
-    }, '*');
+    });
 };
 
 const main = async (userConfig: Config) => {
@@ -70,7 +70,7 @@ const main = async (userConfig: Config) => {
     const problems = await engine.executeOn(new URL(userConfig.resource));
     const results: Events = { results: problems };
 
-    self.postMessage(results, '*');
+    self.postMessage(results);
 };
 
 const onMessage = (event: MessageEvent) => {
@@ -88,4 +88,4 @@ self.addEventListener('message', onMessage);
 
 const requestConfig: Events = { requestConfig: true };
 
-self.postMessage(requestConfig, '*');
+self.postMessage(requestConfig);

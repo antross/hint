@@ -95,7 +95,7 @@ export default class WebExtensionConnector implements IConnector {
     }
 
     private sendMessage(message: Events) {
-        self.postMessage(message, '*');
+        self.postMessage(message);
     }
 
     private async sendFetchEndEvents() {
