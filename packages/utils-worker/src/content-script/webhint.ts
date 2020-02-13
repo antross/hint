@@ -20,6 +20,7 @@ import WebExtensionConnector from './connector';
 
 import hints from '../shared/hints.import';
 
+/* istanbul ignore next */
 const reportError = (message: string, stack: string) => {
     self.postMessage({
         error: {
@@ -66,7 +67,7 @@ const main = async (userConfig: Config) => {
     };
 
     const engine = new Engine(config, resources);
-    const problems = await engine.executeOn(new URL(location.href));
+    const problems = await engine.executeOn(new URL(userConfig.resource));
     const results: Events = { results: problems };
 
     self.postMessage(results, '*');

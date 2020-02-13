@@ -135,7 +135,7 @@ export default class WebExtensionConnector implements IConnector {
     }
 
     public async collect(target: URL) {
-        const resource = target.href;
+        const resource = this._resource = target.href;
 
         await this._engine.emitAsync('scan::start', { resource });
 

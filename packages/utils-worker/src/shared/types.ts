@@ -4,7 +4,7 @@ import { FetchEnd, FetchStart } from 'hint/dist/src/lib/types';
 
 export type Config = {
     locale?: string;
-    url: string;
+    resource: string;
 };
 
 export type ErrorData = {

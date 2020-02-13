@@ -1,8 +1,18 @@
 import test from 'ava';
+import * as htmlparser2Adapter from 'parse5-htmlparser2-tree-adapter';
+import * as parse5 from 'parse5';
 import * as proxyquire from 'proxyquire';
-import * as sinon from 'sinon';
+
+import { DocumentData } from '@hint/utils-dom';
 
 import { readFixture } from './helpers/fixtures';
+import { Events } from '../src/shared/types';
+
+type MessageEvent = {
+    data: Events;
+};
+
+type MessageListener = (event: MessageEvent) => void;
 
 const base = '../src/content-script';
 
@@ -16,27 +26,39 @@ const paths: { [name: string]: string } = {
     webhint: `${base}/webhint`
 };
 
-const stubContext = () => {
-    const listeners = new Set<Function>();
+const stubContext = (hostListener: MessageListener) => {
+    const workerListeners = new Set<MessageListener>();
+
+    const postMessage = (data: Events) => {
+        for (const listener of workerListeners) {
+            setTimeout(() => {
+                listener({ data });
+            }, 0);
+        }
+    };
 
     const stubs = {
         '../shared/globals': {
             '@noCallThru': true,
             self: {
-                addEventListener(name: string, handler: Function) {
+                addEventListener(name: string, handler: MessageListener) {
                     if (name !== 'message') {
                         throw new Error(`Event ${name} has not been stubbed.`);
                     }
 
-                    listeners.add(handler);
+                    workerListeners.add(handler);
                 },
-                postMessage(data: any, origin: string) {},
-                removeEventListener(name: string, handler: Function) {
+                postMessage(data: any, origin: string) {
+                    setTimeout(() => {
+                        hostListener({ data });
+                    }, 0);
+                },
+                removeEventListener(name: string, handler: MessageListener) {
                     if (name !== 'message') {
                         throw new Error(`Event ${name} has not been stubbed.`);
                     }
 
-                    listeners.delete(handler);
+                    workerListeners.delete(handler);
                 }
             }
         }
@@ -51,23 +73,74 @@ const stubContext = () => {
         ...stubs
     });
 
-    return { listeners, self };
+    return { postMessage };
 };
 
-test('It handles invalid ignored urls', async (t) => {
-    const url = 'http://localhost/';
-    const html = await readFixture('missing-lang.html');
-    const { listeners, self } = stubContext();
+test('It runs a basic scan', async (t) => {
+    let count = 0;
+    const locale = 'en-US';
+    const resource = 'http://localhost/';
+    const html = await readFixture('button-type.html');
 
-    sinon.stub(self, 'addEventListener')
+    const snapshot = parse5.parse(html, {
+        sourceCodeLocationInfo: true,
+        treeAdapter: htmlparser2Adapter
+    }) as DocumentData;
 
-    const resultsPromise = stubEvents({ ignoredUrls: '(foo' }, () => {
-        sendFetch(url, html);
+    const p = new Promise((resolve) => {
+        const { postMessage } = stubContext(({ data }) => {
+            count++;
+
+            switch (count) {
+                case 1:
+                    t.deepEqual(data, { requestConfig: true });
+                    postMessage({ config: { locale, resource } });
+                    break;
+                case 2:
+                    t.deepEqual(data, { ready: true });
+                    postMessage({ fetchStart: { resource }});
+                    postMessage({
+                        fetchEnd: {
+                            element: null,
+                            request: {
+                                headers: {} as any,
+                                url: resource
+                            },
+                            resource,
+                            response: {
+                                body: {
+                                    content: html,
+                                    rawContent: null as any,
+                                    rawResponse: null as any
+                                },
+                                charset: '',
+                                headers: { 'content-type': 'text/html' } as any,
+                                hops: [],
+                                mediaType: '',
+                                statusCode: 200,
+                                url: resource
+                            }
+                        }
+                    });
+                    postMessage({ snapshot });
+                    break;
+                case 3:
+                    t.deepEqual(data, { done: true });
+                    break;
+                case 4:
+                    t.log(data);
+                    t.truthy(data.results);
+                    t.truthy(data.results?.length);
+                    t.is(data.results?.filter((r) => {
+                        return r.hintId === 'button-type';
+                    }).length, 1);
+                    resolve();
+                    break;
+                default:
+                    t.fail();
+            }
+        });
     });
 
-    stubContext(url, html);
-
-    const results = await resultsPromise;
-
-    t.not(results.categories.length, 0);
+    await p;
 });
