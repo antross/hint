@@ -5,12 +5,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 module.exports = (env) => {
     return {
         context: __dirname,
-        entry: {
-            'background-script': './dist/src/background-script.js',
-            'content-script/webhint': './dist/src/content-script/webhint.js',
-            'devtools/devtools': './dist/src/devtools/devtools.js',
-            'devtools/panel': './dist/src/devtools/panel.js'
-        },
+        entry: { 'content-script/webhint': './dist/src/content-script/webhint.js' },
         mode: env && env.release ? 'production' : 'none',
         module: {
             rules: [
@@ -23,32 +18,6 @@ module.exports = (env) => {
                 {
                     test: /js-library-detector/,
                     use: 'raw-loader'
-                },
-                // Automatically bundle and inject referenced CSS files.
-                {
-                    test: /\.css$/,
-                    use: [
-                        'style-loader',
-                        {
-                            loader: 'css-loader',
-                            options: {
-                                modules: {
-                                    /*
-                                     * Generate scoped class names using the same format as `create-react-app` (unique, but readable).
-                                     * https://facebook.github.io/create-react-app/docs/adding-a-css-modules-stylesheet
-                                     */
-                                    localIdentName: '[name]_[local]_[hash:base64:5]'
-                                }
-                            }
-                        }
-                    ]
-                },
-                {
-                    test: /\.svg$/,
-                    use: {
-                        loader: 'svg-url-loader',
-                        options: { noquotes: true }
-                    }
                 },
                 {
                     test: /\.md$/,

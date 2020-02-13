@@ -1,7 +1,5 @@
 import camelCase = require('lodash/camelCase');
 
-import { getMessage as extensionGetMessage } from '../devtools/utils/i18n';
-
 type GetMessage = typeof import('@hint/utils-i18n').getMessage;
 
 export const getMessage: GetMessage = (key, path, options?) => {
@@ -16,5 +14,6 @@ export const getMessage: GetMessage = (key, path, options?) => {
     const prefix = camelCase(packageName);
     const substitutions = options && options.substitutions;
 
-    return extensionGetMessage(`${prefix}_${key}` as any, substitutions);
+    // TODO: Get actual localized message.
+    return `${prefix}_${key} ${substitutions}`;
 };

@@ -2,7 +2,6 @@ import { URL } from 'url';
 
 import { Engine } from 'hint';
 import {
-    createHelpers,
     DocumentData,
     getElementByUrl,
     HTMLDocument,
@@ -17,8 +16,10 @@ import {
 } from 'hint/dist/src/lib/types';
 import { ConnectorOptionsConfig } from '@hint/utils';
 
-import { browser, document, location, window } from '../shared/globals';
+import { self } from '../shared/globals';
 import { Events } from '../shared/types';
+
+import { setFetchType } from './set-fetch-type';
 
 export default class WebExtensionConnector implements IConnector {
     private _document: HTMLDocument | undefined;
@@ -27,6 +28,7 @@ export default class WebExtensionConnector implements IConnector {
     private _fetchEndQueue: FetchEnd[] = [];
     private _onComplete: (err: Error | null, resource?: string) => void = () => { };
     private _options: ConnectorOptionsConfig;
+    private _resource = '';
 
     public static schema = {
         additionalProperties: false,
@@ -49,18 +51,18 @@ export default class WebExtensionConnector implements IConnector {
 
         (engine as Engine<import('@hint/parser-html').HTMLEvents>).on('parse::end::html', (event) => {
             /* istanbul ignore else */
-            if (event.resource === location.href) {
+            if (event.resource === this._resource) {
                 this._originalDocument = event.document;
             }
         });
 
         const onSnapshot = async (snapshot: DocumentData) => {
-            const resource = location.href;
+            const resource = this._resource;
 
             try {
                 restoreReferences(snapshot);
 
-                this._document = new HTMLDocument(snapshot, location.href, this._originalDocument);
+                this._document = new HTMLDocument(snapshot, this._resource, this._originalDocument);
 
                 await this.sendFetchEndEvents();
 
@@ -93,7 +95,7 @@ export default class WebExtensionConnector implements IConnector {
     }
 
     private sendMessage(message: Events) {
-        browser.runtime.sendMessage(message);
+        self.postMessage(message, '*');
     }
 
     private async sendFetchEndEvents() {
@@ -115,7 +117,7 @@ export default class WebExtensionConnector implements IConnector {
          * Delay dispatching FetchEnd until we have the DOM snapshot to populate `element`.
          * But immediately process target's FetchEnd to populate `originalDocument`.
          */
-        if (!this._document && event.response.url !== location.href) {
+        if (!this._document && event.response.url !== this._resource) {
             this._fetchEndQueue.push(event);
 
             return;
